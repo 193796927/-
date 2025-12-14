@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>年度业务数据管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#A23B72',
+                        secondary: '#2E86AB',
+                        accent: '#F18F01',
+                        neutral: '#F8F5F2',
+                        'neutral-dark': '#333333'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        .cell-transition { transition: all 0.2s ease; }
+        .btn-hover { @apply transform hover:scale-105 transition-transform duration-200; }
+        .card-hover { @apply hover:shadow-lg transition-shadow duration-300; }
+        .month-active { @apply bg-primary text-white; }
+        .form-input { @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary; }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .beautician-item { @apply flex items-center space-x-3 p-3 border border-gray-200 rounded-lg mb-2; }
+        .remove-beautician { @apply text-red-500 hover:text-red-700 cursor-pointer; }
+        .percentage-input { @apply w-20 px-2 py-1 border border-gray-300 rounded text-center; }
+        .multi-beautician-cell { @apply py-2 space-y-1; }
+        .selected-project { @apply bg-primary text-white px-3 py-1 rounded-full text-sm mr-2 mb-2 inline-flex items-center; }
+        .selected-beautician { @apply bg-green-100 text-green-800 px-2 py-1 rounded text-xs mr-1 mb-1 inline-block; }
+        /* 销售美容师卡片样式 */
+.sales-beautician-item {
+    transition: all 0.3s ease;
+    border-left: 4px solid #A23B72;
+}
+
+.sales-beautician-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 输入框样式 */
+.performance-input-group {
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+}
+
+.commission-input-group {
+    background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+}
+
+/* 百分比显示 */
+.percentage-display {
+    font-size: 24px;
+    font-weight: bold;
+    color: #A23B72;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+/* 金额显示 */
+.amount-display {
+    font-size: 18px;
+    font-weight: bold;
+    color: #2E86AB;
+}
+/* 美容师分配样式 */
+.project-allocation-item {
+    border-left: 4px solid #A23B72;
+    transition: all 0.3s ease;
+}
+
+.project-allocation-item:hover {
+    box-shadow: 0 4px 12px rgba(162, 59, 114, 0.1);
+}
+
+
+
+.beautician-assign-item:hover {
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(46, 134, 171, 0.15);
+}
+
+/* 手工费分配区域 */
+.fee-allocation-box {
+    background: linear-gradient(135deg, #f3e5f5 0%, #e3f2fd 100%);
+    border-radius: 8px;
+    border: 1px solid #e0e7ff;
+}
+
+/* 汇总统计 */
+.allocation-summary {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 10px;
+    border: 2px solid #dee2e6;
+}
+
+/* 状态颜色 */
+.fee-status-good {
+    color: #28a745;
+}
+
+.fee-status-warning {
+    color: #ffc107;
+}
+
+.fee-status-error {
+    color: #dc3545;
+}
+/* 多项目管理样式 */
+.project-card {
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.project-header {
+    border-left: 4px solid #A23B72;
+}
+
+.beautician-assign-item {
+    border-left: 3px solid #2E86AB;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* 项目统计样式 */
+.project-stat {
+    transition: all 0.3s ease;
+}
+
+.stat-good {
+    color: #10B981;
+}
+
+.stat-warning {
+    color: #F59E0B;
+}
+
+.stat-error {
+    color: #EF4444;
+}
+/* 多项目样式 */
+    .project-allocation-card {
+        margin-bottom: 1.5rem;
+    }
+    
+    .project-allocation-card:last-child {
+        margin-bottom: 0;
+    }
+    
+    /* 分隔线样式 */
+    .project-separator {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #E5E7EB, transparent);
+        margin: 1.5rem 0;
+    }
+    
+    /* 项目标题样式 */
+    .project-title {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+        .project-header {
+            padding: 1rem;
+        }
+        
+        .beautician-assign-item {
+            padding: 0.75rem;
+        }
+    }
+/* 美观的圆形标记样式 */
+.beautiful-rank-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 14px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.beautiful-rank-circle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.rank-1 {
+    background: linear-gradient(135deg, #FFD700 0%, #FFB800 100%);
+    box-shadow: 0 4px 8px rgba(255, 215, 0, 0.3);
+    border: 2px solid #FFC107;
+}
+
+.rank-2 {
+    background: linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 100%);
+    box-shadow: 0 4px 8px rgba(192, 192, 192, 0.3);
+    border: 2px solid #B0B0B0;
+}
+
+.rank-3 {
+    background: linear-gradient(135deg, #CD7F32 0%, #B87333 100%);
+    box-shadow: 0 4px 8px rgba(205, 127, 50, 0.3);
+    border: 2px solid #C68E2E;
+}
+
+.rank-other {
+    background: linear-gradient(135deg, #A23B72 0%, #8A3360 100%);
+    box-shadow: 0 4px 8px rgba(162, 59, 114, 0.3);
+    border: 2px solid #8A3360;
+}
+
+/* 添加微妙的内部阴影和光泽效果 */
+.beautiful-rank-circle::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+    border-radius: 50% 50% 0 0;
+    pointer-events: none;
+}
+
+/* 到店次数标记样式 */
+.visit-badge {
+    background: linear-gradient(135deg, #2E86AB 0%, #1B6CA8 100%);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(46, 134, 171, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.visit-badge i {
+    font-size: 10px;
+    margin-right: 4px;
+}
+</style>
+</head>
+<body class="bg-neutral min-h-screen text-neutral-dark">
+    <header class="bg-white shadow-md sticky top-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-calendar-check-o text-primary text-2xl"></i>
+                <h1 class="text-xl md:text-2xl font-bold text-primary">年度业务数据管理系统</h1>
+            </div>
+            
+            <div class="flex items-center space-x-4 mt-2 md:mt-0 flex-wrap justify-center">
+                <button id="importBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg btn-hover flex items-center">
+                    <i class="fa fa-upload mr-2"></i>导入数据
+                </button>
+                <button id="exportCurrentBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg btn-hover flex items-center">
+                    <i class="fa fa-download mr-2"></i>导出当月
+                </button>
+                <button id="exportAllBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg btn-hover flex items-center">
+                    <i class="fa fa-download mr-2"></i>导出全年
+                </button>
+                <button id="projectBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg btn-hover flex items-center">
+                    <i class="fa fa-tasks mr-2"></i>项目管理
+                </button>
+                <button id="staffBtn" class="bg-accent hover:bg-accent/90 text-white px-4 py-2 rounded-lg btn-hover flex items-center">
+                    <i class="fa fa-user-plus mr-2"></i>员工管理
+                </button>
+                <button id="saveBtn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg btn-hover flex items-center">
+                    <i class="fa fa-save mr-2"></i>保存数据
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="bg-white border-b">
+        <div class="container mx-auto px-4">
+            <div class="flex overflow-x-auto py-3 space-x-2 hide-scrollbar">
+                <button class="month-btn px-4 py-2 rounded-full text-sm whitespace-nowrap month-active" data-month="1">1月</button>
+                <button class="month-btn px-4 py-2 rounded-full text-sm whitespace-nowrap bg-gray-100 hover:bg-gray-200" data-month="2">2月</button>
+                <button class="month-btn px-4 py-2 rounded-full text-sm whitespace-nowrap bg-gray-100 hover:bg-gray-200" data-month="3">3月</button>
+                <button class="month-btn px-4 py-2 rounded-full text-sm whitespace-nowrap bg-gray-100 hover:bg-gray-200" data-month="4">4月</button>
+                <button class="month-btn px-4 py-2 rounded-full text-sm whitespace-nowrap bg-gray-100 hover:bg-gray-200" data-month="5">5月</button>
+                <button class="month-btn px-4 py-2 rounded-full text-sm whitespace-nowrap bg-gray-100 hover:bg-gray-200" data-month="6">6月</button>
+                <button class="month-btn px-4 py-2 rounded-full text-sm whitespace-nowrap bg-gray-100 hover:bg-gray-200" data-month="7">7月</button>
+                <button class="month-btn px-4 py-2 rounded-full text-sm whitespace-nowrap bg-gray-100 hover:bg-gray-200" data-month="8">8月</button>
+                <button class="month-btn px-4 py-2 rounded-full text-sm whitespace-nowrap bg-gray-100 hover:bg-gray-200" data-month="9">9月</button>
+                <button class="month-btn px-4 py-2 rounded-full text-sm whitespace-nowrap bg-gray-100 hover:bg-gray-200" data-month="10">10月</button>
+                <button class="month-btn px-4 py-2 rounded-full text-sm whitespace-nowrap bg-gray-100 hover:bg-gray-200" data-month="11">11月</button>
+                <button class="month-btn px-4 py-2 rounded-full text-sm whitespace-nowrap bg-gray-100 hover:bg-gray-200" data-month="12">12月</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 shadow card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">本月记录</p>
+                        <h3 class="text-3xl font-bold mt-1" id="monthRecords">0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <i class="fa fa-list-alt text-primary text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 text-sm text-green-600 flex items-center">
+                    <i class="fa fa-check-circle mr-1"></i> 当前月份
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 shadow card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">本月客户</p>
+                        <h3 class="text-3xl font-bold mt-1" id="monthCustomers">0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center">
+                        <i class="fa fa-users text-secondary text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 text-sm text-gray-500 flex items-center">
+                    <i class="fa fa-user mr-1"></i> 已去重统计
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 shadow card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">客户总数</p>
+                        <h3 class="text-3xl font-bold mt-1" id="totalCustomers">0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i class="fa fa-user-circle text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 text-sm text-gray-500 flex items-center">
+                    <i class="fa fa-users mr-1"></i> 全年去重统计
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 shadow card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">月营业额</p>
+                        <h3 class="text-3xl font-bold mt-1" id="monthRevenue">¥0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                        <i class="fa fa-money text-green-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 text-sm text-green-600 flex items-center" id="monthRevenueChange">
+                    <i class="fa fa-arrow-up mr-1"></i> 较上月增长0%
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 shadow card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">年总营业额</p>
+                        <h3 class="text-3xl font-bold mt-1" id="yearRevenue">¥0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                        <i class="fa fa-line-chart text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 text-sm text-purple-600 flex items-center">
+                    <i class="fa fa-calendar mr-1"></i> 全年累计
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 shadow card-hover lg:col-span-2">
+                <h3 class="text-lg font-bold mb-4">客户年度消费排名</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">排名</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">客户名称</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">总消费</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">到店次数</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">平均消费</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerRankingBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 shadow card-hover">
+                <h3 class="text-lg font-bold mb-4">Top5客户消费占比</h3>
+                <div class="h-64">
+                    <canvas id="topCustomersChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-6 shadow mb-8 card-hover">
+            <h3 class="text-lg font-bold mb-4">美容师月度业绩统计</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">美容师</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">总手工费</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">总业绩</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">服务次数</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">总提成</th>
+                        </tr>
+                    </thead>
+                    <tbody id="beauticianStatsBody"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 shadow card-hover">
+                <h3 class="text-lg font-bold mb-4">业务类型分布</h3>
+                <div class="h-64">
+                    <canvas id="serviceTypeChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 shadow card-hover">
+                <h3 class="text-lg font-bold mb-4">月度营业额趋势</h3>
+                <div class="h-64">
+                    <canvas id="monthlyTrendChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 shadow card-hover">
+                <h3 class="text-lg font-bold mb-4">到店途径分布</h3>
+                <div class="h-64">
+                    <canvas id="arrivalChannelChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl p-4 shadow mb-6">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center">
+                    <button id="addRowBtn" class="bg-secondary hover:bg-secondary/90 text-white px-4 py-2 rounded-lg btn-hover flex items-center">
+                        <i class="fa fa-plus mr-2"></i>新增记录
+                    </button>
+                </div>
+                
+                <div class="relative">
+                    <input type="text" id="searchInput" placeholder="搜索记录..." 
+                           class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary w-full md:w-64">
+                    <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">到店日期</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">客户名称</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">项目</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">到店途径</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">金额</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">服务美容师</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">手工费</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">销售美容师</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">业绩</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">提成</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium text-gray-500">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+            
+            <div class="px-4 py-3 flex items-center justify-between border-t">
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-gray-700">
+                            显示第 <span id="currentPageRange">1 到 0</span> 条，共 <span id="totalItems">0</span> 条记录
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button id="prevPage" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">上一页</span>
+                                <i class="fa fa-chevron-left"></i>
+                            </button>
+                            <div id="paginationNumbers" class="flex"></div>
+                            <button id="nextPage" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <span class="sr-only">下一页</span>
+                                <i class="fa fa-chevron-right"></i>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between w-full sm:hidden">
+                    <button id="prevPageMobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        上一页
+                    </button>
+                    <button id="nextPageMobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        下一页
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer class="bg-white border-t mt-12 py-6">
+        <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+            <p>© 2023 美容养生业务管理系统 | 数据管理与分析平台</p>
+        </div>
+    </footer>
+    
+    <!-- 项目管理模态框 -->
+    <div id="projectModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-neutral-dark">项目管理</h3>
+                    <button id="closeProjectModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2">
+                        <div class="mb-4 flex justify-between items-center">
+                            <h4 class="font-medium">项目列表</h4>
+                            <div class="flex space-x-2">
+                                <button id="importProjectBtn" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg btn-hover flex items-center text-sm">
+                                    <i class="fa fa-upload mr-1"></i>导入
+                                </button>
+                                <button id="exportProjectBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg btn-hover flex items-center text-sm">
+                                    <i class="fa fa-download mr-1"></i>导出
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full">
+                                <thead>
+                                    <tr class="border-b">
+                                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">项目名称</th>
+                                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">项目类型</th>
+                                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">手工费</th>
+                                        <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="projectList"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium mb-4" id="projectFormTitle">添加新项目</h4>
+                        <form id="projectForm" class="space-y-4">
+                            <input type="hidden" id="projectIndex" value="-1">
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">项目名称 <span class="text-red-500">*</span></label>
+                                <input type="text" id="projectName" class="form-input" placeholder="请输入项目名称" required>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">项目类型 <span class="text-red-500">*</span></label>
+                                <div class="flex space-x-2 mb-2">
+                                    <input type="text" id="newTypeInput" class="form-input flex-1" placeholder="新增类型">
+                                    <button type="button" id="addTypeBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg">
+                                        添加
+                                    </button>
+                                </div>
+                                <select id="projectType" class="form-input" required></select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">手工费 <span class="text-red-500">*</span></label>
+                                <input type="number" step="0.01" id="projectManualFee" class="form-input" placeholder="0.00" required>
+                            </div>
+                            
+                            <div class="flex space-x-3 pt-2">
+                                <button type="button" id="cancelProjectBtn" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 btn-hover">取消</button>
+                                <button type="submit" id="saveProjectBtn" class="flex-1 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg btn-hover">保存项目</button>
+                            </div>
+                        </form>
+                        
+                        <div class="mt-6 pt-4 border-t">
+                            <h4 class="font-medium mb-2">项目类型管理</h4>
+                            <div id="projectTypesList" class="flex flex-wrap gap-2 mb-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 项目导入模态框 -->
+    <div id="importProjectModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-neutral-dark">导入项目数据</h3>
+                    <button id="closeImportProjectModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="mb-4">
+                    <p class="text-sm text-gray-600 mb-4">请上传CSV格式的项目文件</p>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer" id="projectDropArea">
+                        <i class="fa fa-file-text-o text-3xl text-gray-400 mb-2"></i>
+                        <p class="text-gray-500">拖放CSV文件到此处，或<span class="text-primary">点击上传</span></p>
+                        <input type="file" id="projectFileInput" accept=".csv" class="hidden">
+                    </div>
+                </div>
+                
+                <div id="projectImportProgress" class="hidden mb-4">
+                    <div class="text-sm font-medium text-gray-700 mb-1">导入进度</div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="projectProgressBar" class="bg-primary h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="projectImportStatus" class="text-xs text-gray-500 mt-1">准备导入...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 员工管理模态框 -->
+    <div id="staffModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-neutral-dark">员工管理</h3>
+                    <button id="closeStaffModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="mb-4">
+                    <h4 class="font-medium mb-2">美容师/理疗师列表</h4>
+                    <ul id="staffList" class="max-h-60 overflow-y-auto"></ul>
+                </div>
+                
+                <button id="addStaffBtn" class="w-full bg-secondary hover:bg-secondary/90 text-white px-4 py-2 rounded-lg btn-hover flex items-center justify-center">
+                    <i class="fa fa-plus mr-2"></i>添加员工
+                </button>
+                
+                <form id="staffForm" class="space-y-4 hidden mt-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">员工姓名 <span class="text-red-500">*</span></label>
+                        <input type="text" id="staffName" class="form-input" placeholder="请输入员工姓名" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">职位 <span class="text-red-500">*</span></label>
+                        <select id="staffPosition" class="form-input" required>
+                            <option value="美容师">美容师</option>
+                            <option value="理疗师">理疗师</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex space-x-3 pt-2">
+                        <button type="button" id="cancelStaffBtn" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 btn-hover">取消</button>
+                        <button type="button" id="saveStaffBtn" class="flex-1 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg btn-hover">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 业务记录模态框 -->
+    <div id="recordModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-200">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 id="recordModalTitle" class="text-xl font-bold text-neutral-dark">新增业务记录</h3>
+                    <button id="closeRecordModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 修改 index.html 中的业务记录模态框部分 -->
+            <div class="p-6">
+                <form id="recordForm" class="space-y-5">
+                    <input type="hidden" id="recordIndex" value="-1">
+                    <input type="hidden" id="recordMonth" value="">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">到店日期 <span class="text-red-500">*</span></label>
+                            <input type="date" id="recordDate" class="form-input" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">客户名称 <span class="text-red-500">*</span></label>
+                            <input type="text" id="recordCustomer" class="form-input" placeholder="请输入客户姓名" required>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">到店途径 <span class="text-red-500">*</span></label>
+                            <select id="recordChannel" class="form-input" required>
+                                <option value="">请选择到店途径</option>
+                                <option value="会员">会员</option>
+                                <option value="抖音">抖音</option>
+                                <option value="美团">美团</option>
+                                <option value="现场散客">现场散客</option>
+                                <option value="转介绍">转介绍</option>
+                            </select>
+                        </div>
+                        
+                        <!-- 金额类型选择 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">金额类型</label>
+                            <select id="recordAmountType" class="form-input">
+                                <option value="">请选择金额类型（可选）</option>
+                                <option value="单次消费">单次消费</option>
+                                <option value="购卡">购卡</option>
+                                <option value="购卡消费">购卡消费</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- 金额输入（根据金额类型显示/隐藏） -->
+                    <div id="amountInputSection" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">金额</label>
+                        <input type="number" step="0.01" id="recordAmount" class="form-input" placeholder="0.00">
+                    </div>
+                    
+                    <!-- 项目选择部分 -->
+                    <div id="projectSection" class="hidden">
+                        <div class="flex justify-between items-center mb-3">
+                            <label class="block text-sm font-medium text-gray-700">项目选择 <span class="text-red-500">*</span></label>
+                            <div class="flex space-x-2">
+                                <input type="text" id="projectSearch" placeholder="搜索项目..." class="form-input w-48 text-sm">
+                                <button type="button" id="showAllProjects" class="text-sm bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded">
+                                    全部
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="selectedProjects" class="mb-3"></div>
+                        
+                        <div id="projectSelection" class="border rounded-lg p-3 max-h-40 overflow-y-auto"></div>
+                    </div>
+                    
+                    <!-- 美容师分配部分（只包含手工费） -->
+                    <div id="beauticianAllocationSection" class="hidden mt-6 border-t pt-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">服务美容师分配</label>
+                                <p class="text-xs text-gray-500">分配项目手工费给服务美容师</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 项目分配列表 -->
+                        <div id="beauticianAllocationList" class="mb-4"></div>
+                        
+                        <!-- 手工费分配汇总部分 -->
+                        <div id="allocationTotal" class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                            <h5 class="font-medium text-gray-800 mb-2 flex items-center">
+                                <i class="fa fa-users mr-2"></i>手工费分配汇总
+                            </h5>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div class="text-center">
+                                    <div class="text-xs text-gray-600 mb-1">项目数量</div>
+                                    <div id="projectCount" class="text-xl font-bold text-gray-700">0</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-xs text-primary mb-1">总项目手工费</div>
+                                    <div id="totalProjectFee" class="text-xl font-bold text-primary">¥0.00</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-xs text-secondary mb-1">总分配手工费</div>
+                                    <div id="totalAssignedFee" class="text-xl font-bold text-secondary">¥0.00</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-xs text-accent mb-1">总手工费</div>
+                                    <div id="totalManualFee" class="text-xl font-bold text-accent">¥0.00</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 销售美容师部分（包含业绩和提成） -->
+                    <div id="salesBeauticianSection" class="hidden mt-6 border-t pt-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <label class="block text-sm font-medium text-gray-700">销售美容师分配</label>
+                            <div class="text-sm text-gray-500">
+                                请为销售业绩分配百分比（总和需为100%）
+                            </div>
+                        </div>
+                        
+                        <!-- 销售美容师列表 -->
+                        <div id="salesBeauticianList" class="mb-4"></div>
+                        
+                        <!-- 添加按钮 -->
+                        <div class="flex justify-center mb-4">
+                            <button type="button" id="addSalesBeauticianBtn" class="text-sm bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg btn-hover flex items-center">
+                                <i class="fa fa-plus mr-2"></i>添加销售美容师
+                            </button>
+                        </div>
+                        
+                        <!-- 业绩分配汇总 -->
+                        <div id="salesSummary" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <h5 class="font-medium text-blue-800 mb-2 flex items-center">
+                                <i class="fa fa-calculator mr-2"></i>业绩分配汇总
+                            </h5>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="text-center">
+                                    <div class="text-xs text-blue-600 mb-1">总金额</div>
+                                    <div id="totalSalesAmount" class="text-xl font-bold text-blue-700">¥0.00</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-xs text-green-600 mb-1">总业绩</div>
+                                    <div id="totalPerformanceAmount" class="text-xl font-bold text-green-700">¥0.00</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-xs text-accent mb-1">总提成</div>
+                                    <div id="totalCommissionAmount" class="text-xl font-bold text-accent">¥0.00</div>
+                                </div>
+                            </div>
+                            <div id="percentageWarning" class="text-xs text-red-500 mt-2 hidden text-center"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 pt-4 border-t">
+                        <button type="button" id="cancelRecordBtn" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 btn-hover">取消</button>
+                        <button type="submit" id="saveRecordBtn" class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg btn-hover">保存记录</button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+    
+    <!-- 数据导入模态框 -->
+    <div id="importModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-neutral-dark">导入数据</h3>
+                    <button id="closeImportModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="mb-4">
+                    <p class="text-sm text-gray-600 mb-4">请上传CSV格式的数据文件</p>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer" id="dropArea">
+                        <i class="fa fa-file-text-o text-3xl text-gray-400 mb-2"></i>
+                        <p class="text-gray-500">拖放CSV文件到此处，或<span class="text-primary">点击上传</span></p>
+                        <input type="file" id="fileInput" accept=".csv" class="hidden">
+                    </div>
+                </div>
+                
+                <div id="importProgress" class="hidden mb-4">
+                    <div class="text-sm font-medium text-gray-700 mb-1">导入进度</div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="progressBar" class="bg-primary h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="importStatus" class="text-xs text-gray-500 mt-1">准备导入...</p>
+                </div>
+                
+                <button id="confirmImportBtn" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg btn-hover flex items-center justify-center hidden">
+                    <i class="fa fa-check mr-2"></i>确认导入
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 通知组件 -->
+    <div id="notification" class="fixed bottom-6 right-6 px-6 py-4 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center max-w-xs">
+        <i id="notificationIcon" class="fa fa-check-circle mr-3 text-xl"></i>
+        <span id="notificationText">操作成功</span>
+    </div>
+
+    <!-- 引入外部JS文件 -->
+    <script src="script.js"></script>
+</body>
+</html>
